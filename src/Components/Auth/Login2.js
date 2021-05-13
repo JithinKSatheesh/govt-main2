@@ -97,14 +97,14 @@ const RenderForm = () => {
                                 required />
                         </div>
                         <Link
-                            
+                            to='/'
                             className='btn btn-success'
                             
-                            // onClick={()=>{authenticate({
-                            //     phoneNumber : '0909098989' ,
-                            //     address : '',
-                            //   },()=>{})
-                            // }}
+                            onClick={()=>{authenticate({
+                                phoneNumber : '0909098989' ,
+                                address : '',
+                              },()=>{})
+                            }}
                             type="submit">Submit</Link>
                     </div>
                 </div>
