@@ -37,13 +37,14 @@ const Nav = () => {
                                         {userPhoneNo 
                                         ?
                                         <Link 
+                                            to='/login'
                                             className={''}
                                             onClick={()=>{signOut()}}
-                                            to='/login'>
+                                            >
                                                 logout
                                         </Link>
                                         :
-                                        <Link to='/'>
+                                        <Link to='/login'>
                                             Login
                                         </Link>
                                         }
