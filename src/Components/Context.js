@@ -1,8 +1,13 @@
 import React,{useEffect, useState} from 'react'
 import {authenticate, isAuthenticated} from './Auth/Auth'
+import axios from 'axios'
+import qs from 'qs';
+
+
 // importing data
 import fakedata from './fakedata'
 
+const Base_URL = 'http://ec2-65-1-109-225.ap-south-1.compute.amazonaws.com'
 
 const ProductContext = React.createContext()
 
@@ -121,20 +126,28 @@ function  ProductProvider(props) {
 
         // inset to cart --- backend
         if(item){
-            console.log(" calling")
             item.phoneNo = isAuthenticated().phoneNumber
+            const totalPrice = item.price*item.quantity;
+            console.log(" calling")
             console.log(item)
-            fetch('https://example.com/cart', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(item),
+            axios({
+                'method'    :   'POST',
+                'url'       :   `${Base_URL}/phpFiles/addToCart.php`,
+                'headers'   :   {
+                                    'content-type': 'application/x-www-form-urlencoded;charset=utf-8',
+                                },
+                'data'      :  qs.stringify({
+                                'userPhone': item.phoneNo,
+                                'itemId'   : item.id ,
+                                'itemQuantity' : item.quantity ,
+                                'itemPrice' :  totalPrice ,
+
+                                }),
             })
             .then(res => {
                 console.log(res)
                 // if success--> set values to cart
-                if(res.status === 200){
+                if(res.status === 202){
                     
                     let index = values.cart.map(e=>e.id).indexOf(item.id)
                     let newCart = values.cart
@@ -155,6 +168,7 @@ function  ProductProvider(props) {
             .catch(err=>{
                 // on error also adding data to cart for testing
                 // remove this on production
+                console.log("error...")
                 let index = values.cart.map(e=>e.id).indexOf(item.id)
                 let newCart = values.cart
                 if(index < 0){
