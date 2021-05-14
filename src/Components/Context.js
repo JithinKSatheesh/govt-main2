@@ -23,6 +23,8 @@ function  ProductProvider(props) {
     useEffect(()=>{
         // call function to initialize data to product kit
         initKitProducts()
+        initCartItems()
+        initUserAddress()
     },[])
 
     const changeHomeScreen=(input)=>{
@@ -46,6 +48,23 @@ function  ProductProvider(props) {
     }
 
     const initUserAddress =()=>{
+
+        // write a function to fetch data from database 
+        fetch('https://api.npms.io/v2/search?q=react')
+        .then(res =>{
+            // if success
+            if(res.status === 200)
+            {
+                setValues({
+                    ...values,
+                    user_address : res.data.useraddress, // match it from backend
+                })
+            }
+        }).catch(err=>{
+            // setting dummy data
+           
+        })
+
         
     }
 
@@ -60,7 +79,6 @@ function  ProductProvider(props) {
                 setValues({
                     ...values,
                     products_veg : res.data.products, // match it from backend
-                    cart : res.data.cart, // match it from backend
                 })
             }
         }).catch(err=>{
@@ -74,18 +92,38 @@ function  ProductProvider(props) {
         
     }
 
+    const initCartItems = ()=>{
+
+        fetch('https://api.npms.io/v2/search?q=react')
+        .then(res =>{
+            // if success
+            if(res.status === 200)
+            {
+                
+                setValues({
+                    ...values,
+                    cart : res.data.cart, // match it from backend
+                })
+            }
+        }).catch(err=>{
+            // handle error
+        })
+        
+
+    }
+
 
     
     const AddToCart = (item) =>{
-
         // const item = values.products_veg.find((x) => x.id === id);
         // item.quantity = parseInt(quantity)
         console.log(item)
 
         // inset to cart --- backend
-
         if(item){
             console.log(" calling")
+            item.phoneNo = isAuthenticated().phoneNumber
+            console.log(item)
             fetch('https://example.com/cart', {
                 method: 'POST',
                 headers: {
@@ -97,26 +135,92 @@ function  ProductProvider(props) {
                 console.log(res)
                 // if success--> set values to cart
                 if(res.status === 200){
+                    
+                    let index = values.cart.map(e=>e.id).indexOf(item.id)
+                    let newCart = values.cart
+                    if(index < 0){
+                        newCart = [item,...newCart]
+                    }
+                    else{
+                        newCart[index] = item
+                    }
+
                     setValues({
                         ...values,
-                        cart : [...values.cart, item]
+                        cart : newCart,
+
                     })
                 } 
             })
             .catch(err=>{
                 // on error also adding data to cart for testing
                 // remove this on production
+                let index = values.cart.map(e=>e.id).indexOf(item.id)
+                let newCart = values.cart
+                if(index < 0){
+                    newCart = [item,...newCart]
+                }
+                else{
+                    newCart[index] = item
+                }
+
                 setValues({
                     ...values,
-                    cart : [...values.cart, item]
+                    cart : newCart,
+
                 })
             })
         }
         
-
-        
         console.log("values added to cart",item , values)
         
+    }
+
+
+    const deleteFromCart=(id)=>{
+        
+        fetch('https://example.com/cart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: id,
+            })
+            .then(res => {
+                console.log(res)
+                // if success--> set values to cart
+                if(res.status === 200){
+                    
+                    let index = values.cart.map(e=>e.id).indexOf(id)
+                    let newCart = values.cart
+                    if(index >= 0){
+                        
+                        newCart.splice(index,1)
+                    }
+
+                    setValues({
+                        ...values,
+                        cart : newCart,
+
+                    })
+                } 
+            })
+            .catch(err=>{
+                // on error also adding data to cart for testing
+                // remove this on production
+                let index = values.cart.map(e=>e.id).indexOf(id)
+                let newCart = values.cart
+                if(index >= 0){
+                    
+                    newCart.splice(index,1)
+                }
+
+                setValues({
+                    ...values,
+                    cart : newCart,
+
+                })
+            })
     }
 
 
@@ -127,7 +231,8 @@ function  ProductProvider(props) {
 
         const data = {
             cart : values.cart,
-            billing_address : values.user_address
+            billing_address : values.user_address,
+            phoneNo: isAuthenticated().phoneNumber
         }
 
         fetch('https://example.com/checkout', {
@@ -156,6 +261,7 @@ function  ProductProvider(props) {
             changeHomeScreen:changeHomeScreen,
             changeKitScreen:changeKitScreen,
             UpdateAddress:UpdateAddress,
+            deleteFromCart:deleteFromCart,
         }}>
             {props.children}
         </ProductContext.Provider>

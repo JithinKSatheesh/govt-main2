@@ -40,6 +40,11 @@ export default function  RenderCartItems(){
                                                     <div className="h6">
                                                        Quantity : {item.quantity}
                                                     </div>
+                                                    <div 
+                                                        onClick={()=>{values.deleteFromCart(item.id)}}
+                                                        className="btn btn-danger">
+                                                        X
+                                                    </div>
                                                 </div>
                                             )
                                         })

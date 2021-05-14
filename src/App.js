@@ -20,8 +20,8 @@ export default function App() {
     <div>
       <Switch>
         <Route path="/login" exact component={Login} />
-        <Route path="/" exact component={Home} /> 
 
+        <PrivateRoute path="/" exact component={Home} /> 
         <PrivateRoute path="/cart" exact component={Cart} />
         <PrivateRoute path="/billing" exact component={Billing} />
      

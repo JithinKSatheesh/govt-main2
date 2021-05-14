@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { ProductConsumer } from './Context'
 import Nav from './nav'
 import {Link} from 'react-router-dom'
+import { isAuthenticated } from './Auth/Auth'
 
 
 const Billing = () => {
@@ -34,7 +35,7 @@ const RenderForm = ({UpdateAddress}) => {
     const [values, setValues] = useState({
         name: '',
         email: '',
-        phone: '',
+        phone: isAuthenticated().phoneNumber,
         address: '',
     })
 

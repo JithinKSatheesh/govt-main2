@@ -49,6 +49,9 @@ const RenderForm = () => {
             return <Redirect to='/'/>
             
         }
+        if(isAuthenticated().phoneNumber){
+            return <Redirect to='/'/>
+        }
     }
     
 
