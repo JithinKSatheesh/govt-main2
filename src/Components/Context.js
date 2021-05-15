@@ -2,7 +2,7 @@ import React,{useEffect, useState} from 'react'
 import {authenticate, isAuthenticated} from './Auth/Auth'
 import axios from 'axios'
 import qs from 'qs';
-
+import {format} from "date-fns";
 
 // importing data
 import fakedata from './fakedata'
@@ -16,20 +16,29 @@ function  ProductProvider(props) {
     
     // declaring all variables common for the project
     const [values,setValues] = useState({
-        cart : [],
+        // cart : [],
         products_veg: [],
         _home_screen : 'kit', // kit or veg
         kit_screen : '200',      //200 or 400
-        user_address : [],
+        // user_address : [],
 
     })
 
+    const [cartValues,setCartValues] = useState({
+        cart : [],
+    })
 
-    useEffect(()=>{
+    const[userValues,setUserValues] = useState({
+         user_address : [],
+    })
+
+
+    useEffect( async ()=>{
         // call function to initialize data to product kit
-        initKitProducts()
-        initCartItems()
-        initUserAddress()
+        
+        await initKitProducts()
+        await initCartItems()
+        await initUserAddress()
     },[])
 
     const changeHomeScreen=(input)=>{
@@ -46,37 +55,76 @@ function  ProductProvider(props) {
     }
 
     const UpdateAddress = (address)=>{
-        setValues({
-            ...values,
+        setUserValues({
+            ...userValues,
             user_address: [address],
         })
     }
 
-    const initUserAddress =()=>{
+    const initUserAddress = async ()=>{
+
+
+        let phoneNo = isAuthenticated().phoneNumber;
+        console.log("phone num init user:" , phoneNo);
+        let phoneNumber = (phoneNo).substring(3);
+        console.log("phone num rem init user :" , phoneNumber);
+
 
         // write a function to fetch data from database 
-        fetch('https://api.npms.io/v2/search?q=react')
+        // fetch('https://api.npms.io/v2/search?q=react')
+        // .then(res =>{
+        //     // if success
+        //     if(res.status === 200)
+        //     {
+        //         setValues({
+        //             ...values,
+        //             user_address : res.data.useraddress, // match it from backend
+        //         })
+        //     }
+        // }).catch(err=>{
+        //     // setting dummy data 
+        // })
+
+
+        await axios({
+            'method'    :   'POST',
+            'url'       :   `${Base_URL}/phpFiles/getUserDetails.php`,
+            'headers'   :   {
+                                'content-type': 'application/x-www-form-urlencoded;charset=utf-8',
+                            },
+            'data'      :  qs.stringify({
+                            // 'userPhone': phoneNumber,
+                            'userPhone': "9746464357",
+                            
+                            }),
+        })
         .then(res =>{
             // if success
-            if(res.status === 200)
+            if(res.status === 202)
             {
-                setValues({
-                    ...values,
-                    user_address : res.data.useraddress, // match it from backend
-                })
+                console.log("res :");
+                console.log(res.data);
+                setUserValues({
+                                ...userValues,
+                                // products_veg : fakedata.products, // match it from backend
+                                user_address : [res.data.useraddress[0]], // match it from backend
+                            });
+                
+                
+                console.log("data : ",userValues);
             }
         }).catch(err=>{
-            // setting dummy data
-           
+            // setting dummy data 
         })
 
-        
+
+
     }
 
 
-    const initKitProducts = ()=>{
+    const initKitProducts = async ()=>{
         // write a function to fetch data from database 
-        fetch('https://api.npms.io/v2/search?q=react')
+        await fetch('https://api.npms.io/v2/search?q=react')
         .then(res =>{
             // if success
             if(res.status === 200)
@@ -97,17 +145,28 @@ function  ProductProvider(props) {
         
     }
 
-    const initCartItems = ()=>{
+    const initCartItems = async ()=>{
 
-        fetch('https://api.npms.io/v2/search?q=react')
+        await axios({
+            'method'    :   'POST',
+            'url'       :   `${Base_URL}/phpFiles/cartRead.php`,
+            'headers'   :   {
+                                'content-type': 'application/x-www-form-urlencoded;charset=utf-8',
+                            },
+            'data'      :  qs.stringify({
+                            // 'userPhone': phoneNumber,
+                            'userPhone': "9746464357",
+                            
+                            }),
+        })
         .then(res =>{
             // if success
-            if(res.status === 200)
+            if(res.status === 202)
             {
-                
-                setValues({
-                    ...values,
-                    cart : res.data.cart, // match it from backend
+                console.log(res)
+                setCartValues({
+                    ...cartValues,
+                    cart : [...res.data.cart], // match it from backend
                 })
             }
         }).catch(err=>{
@@ -126,10 +185,18 @@ function  ProductProvider(props) {
 
         // inset to cart --- backend
         if(item){
-            item.phoneNo = isAuthenticated().phoneNumber
+
+            item.phoneNo = isAuthenticated().phoneNumber;
+            console.log("phone num :" , item.phoneNo);
+            let phoneNumber = (item.phoneNo).substring(3);
+            console.log("phone num rem :" , phoneNumber);
+
+
             const totalPrice = item.price*item.quantity;
             console.log(" calling")
             console.log(item)
+
+
             axios({
                 'method'    :   'POST',
                 'url'       :   `${Base_URL}/phpFiles/addToCart.php`,
@@ -137,11 +204,10 @@ function  ProductProvider(props) {
                                     'content-type': 'application/x-www-form-urlencoded;charset=utf-8',
                                 },
                 'data'      :  qs.stringify({
-                                'userPhone': item.phoneNo,
+                                'userPhone': phoneNumber,
                                 'itemId'   : item.id ,
                                 'itemQuantity' : item.quantity ,
                                 'itemPrice' :  totalPrice ,
-
                                 }),
             })
             .then(res => {
@@ -149,8 +215,8 @@ function  ProductProvider(props) {
                 // if success--> set values to cart
                 if(res.status === 202){
                     
-                    let index = values.cart.map(e=>e.id).indexOf(item.id)
-                    let newCart = values.cart
+                    let index = cartValues.cart.map(e=>e.id).indexOf(item.id)
+                    let newCart = cartValues.cart
                     if(index < 0){
                         newCart = [item,...newCart]
                     }
@@ -158,8 +224,8 @@ function  ProductProvider(props) {
                         newCart[index] = item
                     }
 
-                    setValues({
-                        ...values,
+                    setCartValues({
+                        ...cartValues,
                         cart : newCart,
 
                     })
@@ -169,8 +235,8 @@ function  ProductProvider(props) {
                 // on error also adding data to cart for testing
                 // remove this on production
                 console.log("error...")
-                let index = values.cart.map(e=>e.id).indexOf(item.id)
-                let newCart = values.cart
+                let index = cartValues.cart.map(e=>e.id).indexOf(item.id)
+                let newCart = cartValues.cart
                 if(index < 0){
                     newCart = [item,...newCart]
                 }
@@ -178,42 +244,53 @@ function  ProductProvider(props) {
                     newCart[index] = item
                 }
 
-                setValues({
-                    ...values,
+                setCartValues({
+                    ...cartValues,
                     cart : newCart,
 
                 })
             })
         }
         
-        console.log("values added to cart",item , values)
+        console.log("values added to cart",item , cartValues)
         
     }
 
 
     const deleteFromCart=(id)=>{
-        
-        fetch('https://example.com/cart', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: id,
+
+            console.log("id is : " , id);
+
+            let phoneNo = isAuthenticated().phoneNumber;
+            console.log("phone num :" , phoneNo);
+            let phoneNumber = phoneNo.substring(3);
+            console.log("phone num rem :" , phoneNumber);
+            
+            axios({
+                'method'    :   'POST',
+                'url'       :   `${Base_URL}/phpFiles/deleteFromCart.php`,
+                'headers'   :   {
+                                    'content-type': 'application/x-www-form-urlencoded;charset=utf-8',
+                                },
+                'data'      :  qs.stringify({
+                                'userPhone': phoneNumber,
+                                'itemId'   : id ,
+                                }),
             })
             .then(res => {
                 console.log(res)
                 // if success--> set values to cart
-                if(res.status === 200){
+                if(res.status === 202){
                     
-                    let index = values.cart.map(e=>e.id).indexOf(id)
-                    let newCart = values.cart
+                    let index = cartValues.cart.map(e=>e.id).indexOf(id)
+                    let newCart = cartValues.cart
                     if(index >= 0){
                         
                         newCart.splice(index,1)
                     }
 
-                    setValues({
-                        ...values,
+                    setCartValues({
+                        ...cartValues,
                         cart : newCart,
 
                     })
@@ -222,15 +299,15 @@ function  ProductProvider(props) {
             .catch(err=>{
                 // on error also adding data to cart for testing
                 // remove this on production
-                let index = values.cart.map(e=>e.id).indexOf(id)
-                let newCart = values.cart
+                let index = cartValues.cart.map(e=>e.id).indexOf(id)
+                let newCart = cartValues.cart
                 if(index >= 0){
                     
                     newCart.splice(index,1)
                 }
 
-                setValues({
-                    ...values,
+                setCartValues({
+                    ...cartValues,
                     cart : newCart,
 
                 })
@@ -241,25 +318,63 @@ function  ProductProvider(props) {
     const CheckOut = () =>{
 
         console.log("cheking out")
-        alert("checking out..",values.cart)
+        alert("checking out..",cartValues.cart)
 
         const data = {
-            cart : values.cart,
-            billing_address : values.user_address,
+            cart : cartValues.cart,
+            billing_address : userValues.user_address,
             phoneNo: isAuthenticated().phoneNumber
+        
         }
 
-        fetch('https://example.com/checkout', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
-        }).then(res=>{
-            // if success 
+        console.log(" ------------  ");
+        console.log(" ------------  ");
+        console.log(" ------------  ");
+        console.log("-----data is----");
+        console.log(data.cart);
+        console.log("-----address is----");
+        console.log(data.billing_address);
+        let totalPrice = 0;
+        (data.cart).forEach(function(key) {
+            console.log("key : " , key );
+            console.log("price : ",  key.price*key.quantity );
+            totalPrice +=key.price*key.quantity ;
+
+            
+        });
+        console.log("total price : ", totalPrice );
+        
+
+        let phoneNo = isAuthenticated().phoneNumber;
+        console.log("phone num :" , phoneNo);
+        let phoneNumber = phoneNo.substring(3);
+        console.log("phone num rem :" , phoneNumber);
+        var dateToday     = new Date();
+        console.log( "date : " ,  format( dateToday , " MMM do , yyyy") ) ;
+// format( dateToday , " MMM do , yyyy")
+        axios({
+            'method' :   'POST',
+            'url' :   `${Base_URL}/phpFiles/checkout.php`,
+            'headers':   {
+                             'content-type': 'application/x-www-form-urlencoded;charset=utf-8',
+                         },
+            'data':qs.stringify({
+                            'userPhone'     : phoneNumber,
+                            'orderPlace'    : "id" ,
+                            'totalPrice'    : totalPrice , 
+                            'orderDate'     : format( dateToday , " MMM do , yyyy") ,
+                            }),
+        })
+        .then(res=>{
+            // if success
+            if(res.status === 202)
+            {
+                console.log(res);
+            } 
 
         }).catch(err=>{
             // show error
+            console.log(err);
         })
 
 
@@ -270,6 +385,8 @@ function  ProductProvider(props) {
     return (
         <ProductContext.Provider value={{
             ...values,
+            ...userValues,
+            ...cartValues,
             AddToCart:AddToCart,
             CheckOut:CheckOut,
             changeHomeScreen:changeHomeScreen,
